@@ -1,2 +1,1 @@
-#daily exercice
-
+daily exercise
