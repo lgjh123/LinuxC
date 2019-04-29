@@ -12,14 +12,15 @@ int main(int argc,char**argv)
     pid_t pid;
 
     var = 88;
-    if(write(STDOUT_FILENO,buf,sizeof(buf)-1)!=sizeof(buf)-1)
+    if(write(STDOUT_FILENO,buf,sizeof(buf)-1)!=sizeof(buf)-1);
        // err_sys("write error");
     printf("before fork\n");    //we don't flush stdout
 
     if((pid = fork()) < 0 )
     {
       //  err_sys("fork error");
-    }else if(pid == 0)
+    }
+    else if(pid == 0)
     {
         globvar++;   //child        
         var++;       //modify variables
