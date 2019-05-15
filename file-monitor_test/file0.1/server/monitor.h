@@ -20,8 +20,9 @@ class monitor
 public:
     static const int BUFF_SIZE = 1024;
     static const int MAC_ADD_SIZE = 18;
-    static const int FILE_NAME_LEN = 200;
-    static const int BACKUP_F_NAME = 300;
+    static const int FILE_NAME_LEN = 256;
+    static const int BACKUP_F_NAME = 512;
+    static const int EVENT_BUFF = 256;
 public:
     monitor() {}
     ~monitor() {}
@@ -32,7 +33,9 @@ private:
         int sign = 0;   //标记位
         char mac_addr[MAC_ADD_SIZE];   //MAC地址
         char file_name[FILE_NAME_LEN];    //文件名
+        int lenth;  //剩余长度
         char data[BUFF_SIZE];     //文件内容
+        char event[EVENT_BUFF];    //时间内容
     }TAG;
 
 public:
@@ -44,6 +47,7 @@ public:
     void close_mon(bool real_close = true );
 //处理请求 入口
     void process();
+    TAG* masg = new TAG;  //消息体
 
 //读消息
     bool recv_masg();
@@ -52,7 +56,7 @@ private:
 //备份文件名称
     char backup_f_name[BACKUP_F_NAME];
     void init();//内部init
-    TAG* masg = new TAG;  //消息体
+    //TAG* masg = new TAG;  //消息体
     void backup();
     void recover();
 private:

@@ -83,6 +83,7 @@ bool threadpool< T >::append(T* request)
         m_queuelocker.unlock();
         return false;
     }
+    printf(">>before push_back\n");
     m_workqueue.push_back( request );
     m_queuelocker.unlock();
     m_queuestat.post();
@@ -109,15 +110,19 @@ void threadpool< T >::run()
             m_queuelocker.unlock();
             continue;
         }
+        printf(">>before front\n");
         T* request = m_workqueue.front();
         //加点标记！！
+        printf(">>workqueue.front done\n");
         m_workqueue.pop_front();
         m_queuelocker.unlock();
         if(! request )
         {
             continue;
         }
+        printf(">>before precess\n");
         request->process();
+        //request->backup();
     }
 }
 #endif

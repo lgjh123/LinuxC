@@ -14,7 +14,7 @@
 #include "threadpool.h"
 #include "monitor.h"
 
-#define MAX_FD 65536    
+#define MAX_FD 1024       ///
 #define MAX_EVENT_NUMBER 10000
 
 extern int addfd( int epollfd, int fd ,bool one_shot);
@@ -64,8 +64,8 @@ int main(int argc,char **argv)
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
     assert(listenfd >= 0);
     struct linger tmp = { 1 , 0 };
-    setsockopt(listenfd,SOL_SOCKET,SO_LINGER,&tmp,sizeof(tmp));
-
+    setsockopt(listenfd,SOL_SOCKET,SO_REUSEADDR,&tmp,sizeof(tmp));      //端口复用
+ 
     int ret = 0;
     struct sockaddr_in address;
     bzero(&address, sizeof(address ) );
@@ -111,7 +111,7 @@ int main(int argc,char **argv)
                 //(if 到达最大文件数)
                 //server is busy
                 //countinue
-                
+                std::cout << "connfd :" << connfd << std::endl;
                 users[connfd].init(connfd, client_address);
             }
             else if(events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR ) )
@@ -124,10 +124,13 @@ int main(int argc,char **argv)
                 //如果是EPOLLIN 读
                 if(users[sockfd].recv_masg())
                 {
+                    printf(">>recv_masg return\n");
+                    std::cout << ">>sockfd :" << sockfd << std::endl;
                     pool->append( users + sockfd );
                 }
                 else
                 {
+                    printf("read false\n");
                     users[sockfd].close_mon();
                 }
                 
