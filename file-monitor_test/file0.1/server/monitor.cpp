@@ -70,8 +70,10 @@ bool monitor::recv_masg()
     {   
         printf(">>While bigan\n");
         int count = 0;
+        std::cout << ">>sizeof(TAG) :"<< sizeof(TAG) << std::endl;
         //count =recv(m_sockfd, masg+count, sizeof(TAG)-count, MSG_WAITALL);
-        count =recv(m_sockfd, masg, sizeof(TAG), MSG_WAITALL);
+        count =recv(m_sockfd, masg, sizeof(TAG), 0);
+        std::cout << ">>recv_count = " << count << std::endl;
         if(count==-1)
         {
             //std::cout<< strerror(errno) << std::endl;
@@ -86,13 +88,14 @@ bool monitor::recv_masg()
             std::cout << "something wrong in recv" << std::endl;
             return false;
         }
-        std::cout << ">>recv succses!" << std::endl;
+        std::cout << ">>recv succses!\n" << std::endl;
         std::cout << "data :"<< masg->data << std::endl;
         std::cout << "event :"<< masg->event << std::endl;
         std::cout << "filename :"<< masg->file_name << std::endl;
         std::cout << "lenth :"<< masg->lenth << std::endl;
         std::cout << "mac_addr :"<< masg->mac_addr << std::endl;
         std::cout << "sign :"<< masg->sign << std::endl;
+        printf("\n");
         //if(masg->sign == 1)
         //backup();
         //return 1;   
@@ -105,8 +108,10 @@ bool monitor::recv_masg()
 void monitor::backup()
 {   
     printf(">>IN backup() before memecpy\n");
+    transf_file_name();
+    mkdir(masg->mac_addr,S_IRWXU);
     memcpy(backup_f_name,masg->mac_addr,MAC_ADD_SIZE);
-    strcat(backup_f_name,":");
+    strcat(backup_f_name,"/");
     strcat(backup_f_name,masg->file_name);
     std::cout << "backup_file_name:" << backup_f_name << std::endl;
     printf(">>IN backup before open()\n");
@@ -116,18 +121,23 @@ void monitor::backup()
     }else{
         printf(">>backip_open_success\n");
     }
-    //printf("%s\n",masg->data);
-    int count =write(fd,masg->data,BUFF_SIZE);
-    printf(">>count_write = %d\n masglenth = %d\n",count,masg->lenth);
-    printf(">>write_succes\n");
-    close(fd);
-
+   // //printf("%s\n",masg->data);
+   // int count =write(fd,masg->data,BUFF_SIZE);
+   // printf(">>count_write = %d\n masglenth = %d\n",count,masg->lenth);
+   // printf(">>write_succes\n");
+   // close(fd);
+    strcat(masg->data,"\0");
+    std::ofstream out;
+    out.open(backup_f_name,std::ios::app);
+    out << masg->data;
+    out.close();
 
 }
 void monitor::recover()
 {
     memcpy(backup_f_name,masg->mac_addr,MAC_ADD_SIZE);
-    strcat(backup_f_name,":");
+    strcat(backup_f_name,"/");
+    transf_file_name(); //目录内容转换
     strcat(backup_f_name,masg->file_name);
     std::cout << "backup_file_name:" << backup_f_name << std::endl;
     if((fd = open(backup_f_name,O_CREAT|O_APPEND|O_WRONLY,S_IRUSR|S_IWUSR))==-1)
@@ -138,8 +148,21 @@ void monitor::recover()
     }
     //printf("%s\n",masg->data);
     int count =read(fd,masg->data,BUFF_SIZE); //循环读
+    recover_file_name();
     //printf("count_write = %d\n masglenth = %d\n",count,masg->lenth);
+    masg->lenth = get_file_size();
+    std::cout << ">>read succses!\n" << std::endl;
+    std::cout << ">>send>>data :"<< masg->data << std::endl;
+    std::cout << ">>send>>event :"<< masg->event << std::endl;
+    std::cout << ">>send>>filename :"<< masg->file_name << std::endl;
+    std::cout << ">>send>>lenth :"<< masg->lenth << std::endl;
+    std::cout << ">>send>>mac_addr :"<< masg->mac_addr << std::endl;
+    std::cout << ">>send>>sign :"<< masg->sign << std::endl;
+
     send(m_sockfd,masg,sizeof(TAG),0);
+    masg->lenth = 0;
+    send(m_sockfd,masg,sizeof(TAG),0);
+    
 
     close(fd);
 }
@@ -152,4 +175,41 @@ void monitor::process()
     else if(masg->sign ==1)
         recover();
 
+}
+void monitor::transf_file_name()
+{
+    for(auto &c : masg->file_name)
+    {
+        if(c == '/')
+        {
+            c = '@';
+        }
+    }
+}
+void monitor::recover_file_name()
+{
+    for(auto &c : masg->file_name)
+    {
+        if(c == '@')
+        {
+            c = '/';
+        }
+    }
+}
+
+
+
+unsigned long monitor::get_file_size()
+{
+    unsigned long filesize = -1;
+    struct stat statbuff;
+    if (stat(backup_f_name, &statbuff) < 0)
+    {
+        return filesize;
+    }
+    else
+    {
+        filesize = statbuff.st_size;
+    }
+    return filesize;
 }

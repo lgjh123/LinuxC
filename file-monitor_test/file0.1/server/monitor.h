@@ -12,6 +12,11 @@
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fstream>
+#include <iostream>
 
 #include "locker.h"
 
@@ -23,6 +28,7 @@ public:
     static const int FILE_NAME_LEN = 256;
     static const int BACKUP_F_NAME = 512;
     static const int EVENT_BUFF = 256;
+    static const int CWD_BUFF = 128;
 public:
     monitor() {}
     ~monitor() {}
@@ -59,11 +65,16 @@ private:
     //TAG* masg = new TAG;  //消息体
     void backup();
     void recover();
+
+    void transf_file_name();
+    void recover_file_name();
 private:
 //该请求链接的socket和对方的socket地址
     int m_sockfd;
     sockaddr_in m_address;
     int fd; //文件描述符
+    unsigned long get_file_size(); //获取文件大小
+    char cwd_buf[CWD_BUFF]; //文件当前路径
 
 };
 
