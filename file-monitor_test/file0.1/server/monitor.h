@@ -18,6 +18,7 @@
 #include <fstream>
 #include <iostream>
 
+
 #include "locker.h"
 
 class monitor
@@ -28,7 +29,7 @@ public:
     static const int FILE_NAME_LEN = 256;
     static const int BACKUP_F_NAME = 512;
     static const int EVENT_BUFF = 256;
-    static const int CWD_BUFF = 128;
+    static const int READ_BUFF = 1204;
 public:
     monitor() {}
     ~monitor() {}
@@ -74,7 +75,7 @@ private:
     sockaddr_in m_address;
     int fd; //文件描述符
     unsigned long get_file_size(); //获取文件大小
-    char cwd_buf[CWD_BUFF]; //文件当前路径
+    char read_buf[READ_BUFF]; //文件当前路径
 
 };
 

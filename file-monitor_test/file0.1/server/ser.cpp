@@ -82,6 +82,7 @@ int main(int argc,char **argv)
     epoll_event events[MAX_EVENT_NUMBER];
     int epollfd = epoll_create(5);
     assert(epollfd != -1);
+    std::cout << "[listen fd]:" << ret << std::endl; 
     addfd( epollfd, listenfd, false );
     monitor::m_epollfd = epollfd;
     
@@ -111,7 +112,7 @@ int main(int argc,char **argv)
                 //(if 到达最大文件数)
                 //server is busy
                 //countinue
-                std::cout << "connfd :" << connfd << std::endl;
+                std::cout << "[acceptfd]connfd = :" << connfd << std::endl;
                 users[connfd].init(connfd, client_address);
             }
             else if(events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR ) )
@@ -121,12 +122,16 @@ int main(int argc,char **argv)
             }
             else if(events[i].events & EPOLLIN )
             {
+                std::cout <<"^^^^"<<std::endl;
+                printf(">>>>[this epoll IN!]<<<<\n");
+                std::cout << "^^^^"<<std::endl;
                 //如果是EPOLLIN 读
                 if(users[sockfd].recv_masg())
                 {
-                    printf(">>recv_masg return\n");
-                    std::cout << ">>sockfd :" << sockfd << std::endl;
-                    pool->append( users + sockfd );
+
+                    printf(">>[after recv][epoll in]recv_masg return\n");
+                    // std::cout << ">>[before append][epool in]>>sockfd :" << sockfd << std::endl;
+                    // pool->append( users + sockfd );
                 }
                 else
                 {

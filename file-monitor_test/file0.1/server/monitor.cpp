@@ -1,4 +1,5 @@
 #include "monitor.h"
+#include "threadpool.h"
 int setnonblocking(int fd)
 {
     int old_option = fcntl(fd ,F_GETFL);
@@ -10,13 +11,22 @@ void addfd( int epollfd,int fd ,bool one_shot)
 {
     epoll_event event;
     event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
+    event.events = EPOLLIN  | EPOLLET   | EPOLLRDHUP;    //去掉了ET
+    std::cout <<"[addfd]ET OFF" <<std::endl;
+     
+    one_shot = 1;
     if(one_shot)
     {
+        std::cout <<"[addfd]ONESHOT ON" <<std::endl;
         event.events |= EPOLLONESHOT;
     }
+    else
+    {
+        std::cout <<"[addfd]ONESHOT OFF" <<std::endl;
+    }
+    
     epoll_ctl( epollfd, EPOLL_CTL_ADD, fd ,&event );
-    setnonblocking( fd );
+    //setnonblocking( fd );
 }
 void removefd(int epollfd, int fd)
 {
@@ -53,7 +63,7 @@ void monitor::init(int sockfd, const sockaddr_in& addr)
 }
 void monitor::init()
 {
-    std::cout << "this is init" << std::endl;
+    std::cout << "[private:init]this is init" << std::endl;
     masg->sign = 0;
     masg->lenth = 0;
     memset(masg->mac_addr,'\0',MAC_ADD_SIZE);
@@ -63,101 +73,117 @@ void monitor::init()
     memset(backup_f_name,'\0',BACKUP_F_NAME);
 
 }
+//bool monitor::recv_masg()
 bool monitor::recv_masg()
 {
    
-    while (1)
-    {   
-        printf(">>While bigan\n");
+     while (1)
+     {   
+        printf("..[recv_masg]>>While bigan\n");
         int count = 0;
-        std::cout << ">>sizeof(TAG) :"<< sizeof(TAG) << std::endl;
-        //count =recv(m_sockfd, masg+count, sizeof(TAG)-count, MSG_WAITALL);
-        count =recv(m_sockfd, masg, sizeof(TAG), 0);
-        std::cout << ">>recv_count = " << count << std::endl;
+        std::cout << "..[recv_masg]>>sizeof(TAG) :"<< sizeof(TAG) << std::endl;
+        count =recv(m_sockfd, masg+count, sizeof(TAG)-count, MSG_WAITALL);
+        //count =recv(m_sockfd, masg, sizeof(TAG), 0);
+        strcat(read_buf,masg->data);
+        std::cout << "..[recv_masg]>>recv_count = " << count << std::endl;
         if(count==-1)
         {
             //std::cout<< strerror(errno) << std::endl;
-            if(errno == EAGAIN || errno == EWOULDBLOCK )
+            if(errno == EAGAIN || errno == EWOULDBLOCK  )
             {
+                std::cout << "errno : " << errno << std::endl;
+               // return true;
                 break;
             }
+            //close_mon();
+            // break;
             return false;
         }
         if(count == 0)
         {
             std::cout << "something wrong in recv" << std::endl;
+            //close_mon();
             return false;
         }
-        std::cout << ">>recv succses!\n" << std::endl;
-        std::cout << "data :"<< masg->data << std::endl;
-        std::cout << "event :"<< masg->event << std::endl;
-        std::cout << "filename :"<< masg->file_name << std::endl;
-        std::cout << "lenth :"<< masg->lenth << std::endl;
-        std::cout << "mac_addr :"<< masg->mac_addr << std::endl;
-        std::cout << "sign :"<< masg->sign << std::endl;
-        printf("\n");
-        //if(masg->sign == 1)
-        //backup();
+        std::cout << "[recv_masg]>>recv succses!\n" << std::endl;
+        std::cout << "[recv_masg]>>masg begin:" << std::endl;
+        std::cout << "[recv_masg]data :"<< masg->data << std::endl;
+        std::cout << "[recv_masg]event :"<< masg->event << std::endl;
+        std::cout << "[recv_masg]filename :"<< masg->file_name << std::endl;
+        std::cout << "[recv_masg]lenth :"<< masg->lenth << std::endl;
+        std::cout << "[recv_masg]mac_addr :"<< masg->mac_addr << std::endl;
+        std::cout << "[recv_masg]sign :"<< masg->sign << std::endl;
+        std::cout << "[recv_masg]>>masg end\n" << std::endl;
+         if(masg->sign == 0)
+         backup();
         //return 1;   
-        //else if(masg->sign == 0)
-        //recover();
+         else if(masg->sign == 1)
+         recover();
         //return 0; 
     }  
-    return true;
+        return true;
 }
 void monitor::backup()
 {   
-    printf(">>IN backup() before memecpy\n");
+    pthread_t pth;
+    pth =  pthread_self();
+    printf("##[back up]>>PTHREAD ID = %d\n",pth);
+    printf("##[back up]>>IN backup() before memecpy\n");
     transf_file_name();
     mkdir(masg->mac_addr,S_IRWXU);
     memcpy(backup_f_name,masg->mac_addr,MAC_ADD_SIZE);
     strcat(backup_f_name,"/");
     strcat(backup_f_name,masg->file_name);
-    std::cout << "backup_file_name:" << backup_f_name << std::endl;
-    printf(">>IN backup before open()\n");
-    if((fd = open(backup_f_name,O_CREAT|O_APPEND|O_WRONLY,S_IRUSR|S_IWUSR))==-1)
-    {
-        perror("open");
-    }else{
-        printf(">>backip_open_success\n");
-    }
-   // //printf("%s\n",masg->data);
-   // int count =write(fd,masg->data,BUFF_SIZE);
-   // printf(">>count_write = %d\n masglenth = %d\n",count,masg->lenth);
-   // printf(">>write_succes\n");
-   // close(fd);
+    std::cout << "##[back up]backup_file_name:" << backup_f_name << std::endl;
+    printf("##[back up]>>IN backup before open()\n");
+    // if((fd = open(backup_f_name,O_CREAT|O_APPEND|O_WRONLY,S_IRUSR|S_IWUSR))==-1)
+    // { 
+    //     perror("open");
+    // }else{                                
+    //     printf(">>backip_open_success\n");
+    // }
+   printf("##[back up]before write:%s\n",masg->data);
+//     strcat(masg->data,"\0\n");
+//    int count =write(fd,masg->data,BUFF_SIZE);
+//    printf(">>count_write = %d\n masglenth = %d\n",count,masg->lenth);
+//    printf(">>write_succes\n");
+//    close(fd);
     strcat(masg->data,"\0");
     std::ofstream out;
     out.open(backup_f_name,std::ios::app);
     out << masg->data;
     out.close();
-
+    
 }
 void monitor::recover()
 {
     memcpy(backup_f_name,masg->mac_addr,MAC_ADD_SIZE);
     strcat(backup_f_name,"/");
     transf_file_name(); //目录内容转换
+    //memcpy(backup_f_name,masg->file_name,FILE_NAME_LEN);
     strcat(backup_f_name,masg->file_name);
-    std::cout << "backup_file_name:" << backup_f_name << std::endl;
-    if((fd = open(backup_f_name,O_CREAT|O_APPEND|O_WRONLY,S_IRUSR|S_IWUSR))==-1)
+    std::cout << "@@[recover]backup_file_name:" << backup_f_name << std::endl;
+    if((fd = open(backup_f_name,O_RDONLY,S_IRUSR|S_IWUSR))==-1)
     {
         perror("open");
     }else{
-        printf("recover_open_success\n");
+        printf("@@[recover]recover_open_success\n");
     }
+
     //printf("%s\n",masg->data);
     int count =read(fd,masg->data,BUFF_SIZE); //循环读
     recover_file_name();
     //printf("count_write = %d\n masglenth = %d\n",count,masg->lenth);
     masg->lenth = get_file_size();
     std::cout << ">>read succses!\n" << std::endl;
+    std::cout << "@@[recover]bag:" << std::endl;
     std::cout << ">>send>>data :"<< masg->data << std::endl;
     std::cout << ">>send>>event :"<< masg->event << std::endl;
     std::cout << ">>send>>filename :"<< masg->file_name << std::endl;
     std::cout << ">>send>>lenth :"<< masg->lenth << std::endl;
     std::cout << ">>send>>mac_addr :"<< masg->mac_addr << std::endl;
     std::cout << ">>send>>sign :"<< masg->sign << std::endl;
+    std::cout << "@@[recover]bag end\n" << std::endl;
 
     send(m_sockfd,masg,sizeof(TAG),0);
     masg->lenth = 0;
@@ -168,8 +194,8 @@ void monitor::recover()
 }
 void monitor::process()
 {
-    printf("IN process()\n");
-    std::cout << masg->sign << std::endl;
+    printf("$$[process in]\n");
+    std::cout <<"$$[process]masg->sign = " <<masg->sign << std::endl;
     if(masg->sign==0)
         backup();
     else if(masg->sign ==1)
