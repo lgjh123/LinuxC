@@ -12,12 +12,12 @@ class EventLoop : boost::noncopyable
 {
 public:
     EventLoop();
-    ~EventLoop() {}
+    ~EventLoop();
     void loop();
     void quit();
     //void updateChannel(Channel* channel);
     
-    void assertInLoopThread()
+     void assertInLoopThread()
     {
         if(!isInLoopThread())
         {
@@ -28,12 +28,13 @@ public:
 
 private:
     void abortNotInLoopThread();
-    pid_t threadId_;    
+//    boost::scoped_ptr<Poller> poller_;
+    typedef std::vector<Channel*> ChannelList;
     
     bool looping_;
     bool quit_;
     const pid_t threadId_;
-
+    ChannelList activeChannels_;
 
 };
 
