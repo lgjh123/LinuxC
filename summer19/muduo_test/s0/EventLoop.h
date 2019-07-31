@@ -15,7 +15,7 @@ public:
     ~EventLoop();
     void loop();
     void quit();
-    //void updateChannel(Channel* channel);
+    void updateChannel(Channel* channel);
     
      void assertInLoopThread()
     {

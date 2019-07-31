@@ -57,7 +57,16 @@ void EventLoop::quit()
     //quit()不会立刻停止loop，而是等执行完一次loop
     //再判断while条件时退出
 }
-//void EventLoop::updateChannel(Channel* channel)
+void EventLoop::updateChannel(Channel* channel)
+{
+    assert(channel->ownerloop() == this);
+    //判断channel是不是此Eventloop的channel
+    //ps:channel使用时要传入loop的指针
+    assertInLoopThread();
+    //判断当前线程是否是EventLoop所在线程
+    poller_->updateChannel(channel);
+
+}
 void EventLoop::abortNotInLoopThread()
 {
     std::cout << "EventLoop::abrotNotInloopThread" << std::endl;
