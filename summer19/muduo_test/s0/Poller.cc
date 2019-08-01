@@ -69,6 +69,52 @@ void Poller::updateChannel(Channel* channel)
     std::cout << "fd = " << channel->fd() <<" events = " << channel->events();
     if(channel->index() < 0)
     {
-        //如果channe的索引
+        //channe索引的必要性?
+        assertInLoopThread();
+        std::cout << "fd = " << channel->fd() << " events = " <<channel->events() << std::endl;
+        //索引小于零，说明之前不在channel map中
+        //是一个新的channel
+        if(channel->index() < 0 )
+        {
+            assert(channels_.find(channel->fd()) == channels_.end());
+            struct pollfd pfd;
+            //为它分配struct pollfd 
+            pfd.fd = channel->fd();
+            pfd.events = static_cast<short>(channel->events());
+            pfd.revents = 0;
+            pollfds_.push_back(pfd);
+            //向pollfd list加入这个channel的相关信息
+            int idx = static_cast<int>(pollfds_.size())-1;
+            channel->set_index(idx);
+            channels_[pfd.fd] = channel;
+            //建立fd与channel的键值对
+        }
+        else
+        {
+            //update一个已经在channelmap中的channel
+            assert(channels_.find(channel->fd()) != channels_.end());
+            //在channel中可以找到
+            assert(channels_[channel->fd()] == channel);
+            //更新的channel可以在索引中找到
+            int idx = channel->index();
+            assert(0 <= idx&& idx < static_cast<int>(pollfds_.size()));
+            struct pollfd& pfd = pollfds_[idx];
+            //pfd是pollfds_[idx]的引用
+            assert(pfd.fd == channel->fd() || pfd.fd == -1);
+            //根据该channel的index找到相应的pollfd
+            //它的fd可能与channel相同，也可能被设定为-1（忽略）
+            pfd.events = static_cast<short>(channel->events());
+            pfd.revents = 0;
+            //更新该pollfd的信息
+            if(channel->isNoneEvent())
+            {
+                //忽略这个pollfd
+                pfd.fd = -1;
+            }
+        }
     }
 }
+//pollfdlist通过index维护
+//每个channel都有自己的index，但是它对应的fd
+//可能在pollfd中被设置为-1
+//但在channelmap中的关系不变
