@@ -65,10 +65,6 @@ void Poller::fillActiveChannel(int numEvents,
 }
 void Poller::updateChannel(Channel* channel)
 {
-    assertInLoopThread();
-    std::cout << "fd = " << channel->fd() <<" events = " << channel->events();
-    if(channel->index() < 0)
-    {
         //channe索引的必要性?
         assertInLoopThread();
         std::cout << "fd = " << channel->fd() << " events = " <<channel->events() << std::endl;
@@ -112,7 +108,6 @@ void Poller::updateChannel(Channel* channel)
                 pfd.fd = -1;
             }
         }
-    }
 }
 //pollfdlist通过index维护
 //每个channel都有自己的index，但是它对应的fd

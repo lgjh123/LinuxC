@@ -28,7 +28,7 @@ public:
 
 private:
     void abortNotInLoopThread();
-//    boost::scoped_ptr<Poller> poller_;
+    boost::scoped_ptr<Poller> poller_;
     typedef std::vector<Channel*> ChannelList;
     
     bool looping_;

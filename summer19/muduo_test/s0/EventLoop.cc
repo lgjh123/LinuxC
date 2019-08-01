@@ -1,5 +1,7 @@
 #include <iostream>
 #include "EventLoop.h"
+#include "Channel.h"
+#include "Poller.h"
 #include <iostream>
 #include <unistd.h>
 #include <assert.h>
@@ -9,8 +11,8 @@ const int kPollTimeMs = 10000;
 EventLoop::EventLoop()
     : looping_(false),
     quit_(false),
-    threadId_(syscall(SYS_gettid))//,
-   // poller_(new Poller(this)) // pool是多路复用的封装
+    threadId_(syscall(SYS_gettid)),
+    poller_(new Poller(this)) // pool是多路复用的封装
    // cout 不是线程安全的
 {
     std::cout << "Eventloop created " << this <<std::endl;
@@ -38,14 +40,14 @@ void EventLoop::loop()
 
     while(!quit_)
     {
-//        activeChannels_.clear(); //清空容器(初始化)
-        //poller_->poll(kPollTimeMs,&activeChannels_);
+        activeChannels_.clear(); //清空容器(初始化)
+        poller_->poll(kPollTimeMs,&activeChannels_);
         //用poll获取活跃的IO事件？
- //       for(ChannelList::iterator it = activeChannels_.begin();
- //           it != activeChannels_.end(); ++it)
+        for(ChannelList::iterator it = activeChannels_.begin();
+            it != activeChannels_.end(); ++it)
         {
-            std::cout << "test" << std::endl;quit();
-         // (*it)->handleEvent();
+           // std::cout << "test" << std::endl;quit();
+          (*it)->handleEvent();
         }//遍历活跃io时间，执行回调
     }
     std::cout << "EventLoop " << this << " stop looping"<<std::endl;
@@ -59,7 +61,7 @@ void EventLoop::quit()
 }
 void EventLoop::updateChannel(Channel* channel)
 {
-    assert(channel->ownerloop() == this);
+    assert(channel->ownerLoop() == this);
     //判断channel是不是此Eventloop的channel
     //ps:channel使用时要传入loop的指针
     assertInLoopThread();
