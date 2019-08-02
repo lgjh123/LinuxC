@@ -16,20 +16,20 @@ Socket::~Socket()
 
 void Socket::bindAddress(const InetAddress& addr)
 {
-    sockets::bindOrDie(sockefd_,addr.getSockAddrInet());
+    sockets::bindOrDie(sockfd_,addr.getSockAddrInet());
 }
 
 void Socket::listen()
 {
-    socket::listenOrDie(sockfd_);
+    sockets::listenOrDie(sockfd_);
 }
 
 int Socket::accept(InetAddress* peeraddr)
 {
     struct sockaddr_in addr;
     bzero(&addr,sizeof addr);
-    int connfd = socket::accept(sockfd_,&addr);
-    if(confd >= 0)
+    int connfd = sockets::accept(sockfd_,&addr);
+    if(connfd >= 0)
     {
         peeraddr->setSockAddrInet(addr);
     }

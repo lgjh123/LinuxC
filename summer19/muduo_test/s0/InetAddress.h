@@ -11,20 +11,17 @@
 #ifndef MUDUO_NET_INETADDRESS_H
 #define MUDUO_NET_INETADDRESS_H
 
-#include "datetime/copyable.h"
 
 #include <string>
 
 #include <netinet/in.h>
 
-namespace muduo
-{
 
 ///
 /// Wrapper of sockaddr_in.
 ///
 /// This is an POD interface class.
-class InetAddress : public muduo::copyable
+class InetAddress 
 {
  public:
   /// Constructs an endpoint with given port number.
@@ -52,6 +49,5 @@ class InetAddress : public muduo::copyable
   struct sockaddr_in addr_;
 };
 
-}
 
 #endif  // MUDUO_NET_INETADDRESS_H

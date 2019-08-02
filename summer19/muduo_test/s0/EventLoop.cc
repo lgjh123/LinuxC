@@ -6,13 +6,30 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include <sys/eventfd.h>
+
 __thread EventLoop* t_looInThisThread = 0;
 const int kPollTimeMs = 10000;
+
+static int createEventfd()
+{
+    int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC );
+    if(evtfd < 0)
+    {
+        std::cout << "Failed in eventfd " << std::endl;
+        exit(1);
+    }
+    return evtfd;
+}
 EventLoop::EventLoop()
     : looping_(false),
     quit_(false),
     threadId_(syscall(SYS_gettid)),
-    poller_(new Poller(this)) // pool是多路复用的封装
+    poller_(new Poller(this)) ,// pool是多路复用的封装
+
+    wakeupFd_(createEventfd()),
+    wakeupChannel_(new Channel(this,wakeupFd_))
+
    // cout 不是线程安全的
 {
     std::cout << "Eventloop created " << this <<std::endl;
@@ -25,6 +42,7 @@ EventLoop::EventLoop()
     {
         t_looInThisThread = this;
     }
+    
 }
 EventLoop::~EventLoop()
 {
@@ -73,4 +91,76 @@ void EventLoop::abortNotInLoopThread()
 {
     std::cout << "EventLoop::abrotNotInloopThread" << std::endl;
     assert(false);
+}
+
+
+
+
+
+void EventLoop::runInLoop(const Functor& cb)
+{
+  if (isInLoopThread())
+  {
+    cb();
+  }
+  else
+  {
+    queueInLoop(cb);
+  }
+}
+
+void EventLoop::queueInLoop(const Functor& cb)
+{
+  {
+  mutex.lock();
+  //FIXME
+  pendingFunctors_.push_back(cb);
+  }
+
+  if (!isInLoopThread() || callingPendingFunctors_)
+  {
+    wakeup();
+  }
+}
+
+
+
+void EventLoop::wakeup()
+{
+  uint64_t one = 1;
+  ssize_t n = ::write(wakeupFd_, &one, sizeof one);
+  if (n != sizeof one)
+  {
+    std::cout << "EventLoop::wakeup() writes " << n << " bytes instead of 8" 
+    << std::endl;
+  }
+}
+
+void EventLoop::handleRead()
+{
+  uint64_t one = 1;
+  ssize_t n = ::read(wakeupFd_, &one, sizeof one);
+  if (n != sizeof one)
+  {
+    std::cout << "EventLoop::handleRead() reads " << n << " bytes instead of 8"
+    << std::endl;
+  }
+}
+
+void EventLoop::doPendingFunctors()
+{
+  std::vector<Functor> functors;
+  callingPendingFunctors_ = true;
+
+  {
+  mutex.lock();
+  //FIXME
+  functors.swap(pendingFunctors_);
+  }
+
+  for (size_t i = 0; i < functors.size(); ++i)
+  {
+    functors[i]();
+  }
+  callingPendingFunctors_ = false;
 }
