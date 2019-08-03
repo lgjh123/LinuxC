@@ -34,6 +34,7 @@ public:
 private:
     //不是线程安全的但是，只在loop中执行
     void newConnection(int sockfd,const InetAddress& peerAddr);
+    void removeConnection(const TcpConnectionPtr& conn);
 
     typedef std::map<std::string,TcpConnectionPtr> ConnectionMap;
 

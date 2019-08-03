@@ -25,6 +25,7 @@ public:
     //更新(添加)感兴趣事件,在自己的EventLoop线程中调用
     void assertInLoopThread() { ownerLoop_->assertInLoopThread(); }
     //判断是否在自己的loop线程中调用
+    void removeChannel(Channel* channel);
 
 private:
     void fillActiveChannel(int numEvents,

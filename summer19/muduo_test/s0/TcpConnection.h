@@ -36,17 +36,32 @@ public:
 
     void setMessageCallback(const MessageCallback& cb)
     { messageCallback_ = cb; }
-    
+
+    void setCloseCallback(const CloseCallback& cb)
+    { closeCallback_ = cb; }
+    //channel也有回调
+    //但这里的回调是面向一个连接的从callback中调用
+    //可以从外部调用的设置?
+
     void connectEstablished();  
     //在accept到新的connection(socket)时被调用
     //且只被调用一次
+    void connectDestroyed(); //只被调用一次
+        
+    //当Tcpserver从他的map中removed 这个Tcpconnetion调用
 
 
 private:
-    enum StateE { kConnecting, kConnected };
+    enum StateE { kConnecting, kConnected ,kDisconnected };
 
     void setState(StateE s) { state_ = s; }
     void handleRead();
+    //handleRead会检查read的返回值，根据返回值分别调用
+    //messagecallback、handleClose、handleError
+    void handleWrite();
+    void handleClose();
+    void handleError();
+
 
     EventLoop* loop_;
     std::string name_;
@@ -59,6 +74,7 @@ private:
     InetAddress peerAddr_;
     ConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
+    CloseCallback closeCallback_;
 
 };
 typedef boost::shared_ptr<TcpConnection> TcpConnectionPtr;

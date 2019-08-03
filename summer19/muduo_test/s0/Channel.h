@@ -17,7 +17,7 @@ public:
     //用function做回调函数
     
     Channel(EventLoop* loop,int fd);
-
+    ~Channel();
     void handleEvent();
     //回调分发函数
     //设置各种回调事件
@@ -27,6 +27,10 @@ public:
     {   writeCallback_ = cb;  }
     void setErrorCallback(const EventCallback& cb)
     {   errorCallback_ = cb;  }
+    void setCloseCallback(const EventCallback&cb)
+    {   closeCallback_ = cb; }
+    //Tcpconnection中也有set...Callback
+    //channel中的回调是根据poll返回的event触发的
 
     int fd() const { return fd_; } //获取fd
     int events() const { return events_; } //获取监听事件
@@ -37,6 +41,7 @@ public:
     void enableReading() { events_ |= kReadEvent;update(); }
     //update() --> Eventloop --> Poller
     //监听读事件
+    void disableAll() { events_ = kNoneEvent; update(); }
     
     
     //poller用来的
@@ -50,7 +55,6 @@ public:
     EventLoop* ownerLoop() { return loop_; }
     //当前channel所在的EventLoop
 
-    //没有析构函数 ？~Channel() {}
 
 private:
     void update();
@@ -67,5 +71,8 @@ private:
     EventCallback readCallback_;
     EventCallback writeCallback_;
     EventCallback errorCallback_;
+
+    bool eventHanding_;
+    EventCallback closeCallback_;
 };
 

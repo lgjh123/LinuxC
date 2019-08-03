@@ -4,6 +4,7 @@
 #include "Channel.h"
 #include "EventLoop.h"
 #include "Socket.h"
+#include "SocketsOps.h"
 
 #include <boost/bind.hpp>
 
@@ -30,6 +31,10 @@ TcpConnection::TcpConnection(EventLoop* loop,
     channel_->setReadCallback(
          boost::bind(&TcpConnection::handleRead, this));
     //绑定回调函数
+    //??set....Callback~
+    //
+    //
+    //
 }
 
 TcpConnection::~TcpConnection()
@@ -54,6 +59,44 @@ void TcpConnection::handleRead()
 {
     char buf[65536];
     ssize_t n = ::read(channel_->fd(), buf ,sizeof buf);
-    messageCallback_(shared_from_this(), buf ,n);
+    if(n > 0)
+    {
+        messageCallback_(shared_from_this(), buf ,n);
     //FIXME :close connection if n==0
+    }else if( n == 0)
+    {
+        handleClose();
+    }else{
+        handleError();
+    }
+}
+
+void TcpConnection::handleClose()
+{
+    loop_->assertInLoopThread();
+    std::cout << "TcpConnection::handleClose state = "
+        << state_ << std::endl;
+    assert(state_== kConnected);
+    //不关闭fd，channel->poll 忽略这个fd
+    channel_->disableAll();
+    closeCallback_(shared_from_this());
+}
+
+void TcpConnection::handleError()
+{
+    int err = sockets::getSocketError(channel_->fd());
+    std::cout << "TcpConnetion::handleError [ "
+        << name_ << "] - SO_ERROR = " << err << " "
+        << strerror(err) <<std::endl; //FIXME
+}
+
+void TcpConnection::connectDestroyed()
+{
+  loop_->assertInLoopThread();
+  assert(state_ == kConnected);
+  setState(kDisconnected);
+  channel_->disableAll();
+  connectionCallback_(shared_from_this());
+
+  loop_->removeChannel(get_pointer(channel_));
 }

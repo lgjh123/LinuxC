@@ -4,7 +4,7 @@
 
 #include <assert.h>
 #include <poll.h>
-
+#include <boost/implicit_cast.hpp>
 //顾名思义拥有它的loop,调用它的EventLoop
 //后面需要用这个指针判断是否在一个线程中执行
 Poller::Poller(EventLoop* loop)
@@ -96,7 +96,7 @@ void Poller::updateChannel(Channel* channel)
             assert(0 <= idx&& idx < static_cast<int>(pollfds_.size()));
             struct pollfd& pfd = pollfds_[idx];
             //pfd是pollfds_[idx]的引用
-            assert(pfd.fd == channel->fd() || pfd.fd == -1);
+            assert(pfd.fd == channel->fd() || pfd.fd == -channel->fd()-1);
             //根据该channel的index找到相应的pollfd
             //它的fd可能与channel相同，也可能被设定为-1（忽略）
             pfd.events = static_cast<short>(channel->events());
@@ -105,7 +105,7 @@ void Poller::updateChannel(Channel* channel)
             if(channel->isNoneEvent())
             {
                 //忽略这个pollfd
-                pfd.fd = -1;
+                pfd.fd = -channel->fd()-1;
             }
         }
 }
@@ -113,3 +113,34 @@ void Poller::updateChannel(Channel* channel)
 //每个channel都有自己的index，但是它对应的fd
 //可能在pollfd中被设置为-1
 //但在channelmap中的关系不变
+void Poller::removeChannel(Channel* channel)
+{
+    assertInLoopThread();
+    std::cout << "fd = " << channel->fd();
+    assert(channels_.find(channel->fd()) != channels_.end());
+    assert(channels_[channel->fd()] == channel);
+    assert(channel->isNoneEvent());
+    int idx = channel->index();
+    //获取channel的索引
+    assert(0 <= idx && idx < static_cast<int>(pollfds_.size()));
+    const struct pollfd& pfd = pollfds_[idx]; 
+    //找出这个pollfd
+    (void)pfd; // ?????
+    assert(pfd.fd == -channel->fd()-1 && pfd.events == channel->events());
+    size_t n = channels_.erase(channel->fd());
+    //从channelmap中删除
+    assert(n == 1); (void)n;
+    if (boost::implicit_cast<size_t>(idx) == pollfds_.size()-1) {
+        pollfds_.pop_back();
+        //从pollfdlist中删除
+    } else {
+        // ???????不在pollfdlist中？
+        int channelAtEnd = pollfds_.back().fd;
+        iter_swap(pollfds_.begin()+idx, pollfds_.end()-1);
+        if (channelAtEnd < 0) {
+          channelAtEnd = -channelAtEnd-1;
+        }
+        channels_[channelAtEnd]->set_index(idx);
+        pollfds_.pop_back();
+    }
+}
