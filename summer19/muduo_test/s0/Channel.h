@@ -41,7 +41,13 @@ public:
     void enableReading() { events_ |= kReadEvent;update(); }
     //update() --> Eventloop --> Poller
     //监听读事件
+    void enableWriting() { events_ |= kWriteEvent;update(); }
+    //监听写事件
+    void disableWriting() { events_ &= ~kWriteEvent; update(); }
+    //不在监听读事件
+    
     void disableAll() { events_ = kNoneEvent; update(); }
+    bool isWriting() const { return events_ & kWriteEvent; }
     
     
     //poller用来的

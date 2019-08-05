@@ -7,7 +7,7 @@
 #include "SocketsOps.h"
 
 #include <boost/bind.hpp>
-
+#include <boost/implicit_cast.hpp>
 #include <errno.h>
 #include <stdio.h>
 #include <iostream>
@@ -57,11 +57,11 @@ void TcpConnection::connectEstablished()
 
 void TcpConnection::handleRead()
 {
-    char buf[65536];
-    ssize_t n = ::read(channel_->fd(), buf ,sizeof buf);
+    int savedErrno = 0;
+    ssize_t n = inputBuffer_.readFd(channel_->fd(), &savedErrno);
     if(n > 0)
     {
-        messageCallback_(shared_from_this(), buf ,n);
+        messageCallback_(shared_from_this(), &inputBuffer_ , 0);
     //FIXME :close connection if n==0
     }else if( n == 0)
     {
@@ -99,4 +99,108 @@ void TcpConnection::connectDestroyed()
   connectionCallback_(shared_from_this());
 
   loop_->removeChannel(get_pointer(channel_));
+}
+
+void TcpConnection::send(const std::string& message)
+{
+    if(state_ == kConnected){
+        if(loop_->isInLoopThread()) 
+        {
+            sendInLoop(message);
+        }
+        else
+        {
+            loop_->runInLoop(boost::bind(&TcpConnection::sendInLoop,this,message));
+        }
+    }
+}
+
+void TcpConnection::sendInLoop(const std::string& message)
+{
+    loop_->assertInLoopThread();
+    ssize_t nwrote = 0;
+    if(!channel_->isWriting() && outputBuffer_.readableBytes() == 0)
+    {  //不监控可读时间且可读区buffer没有数据
+        nwrote = ::write(channel_->fd(),message.data(),message.size());
+        if(nwrote >= 0)
+        {
+            if(boost::implicit_cast<size_t>(nwrote) < message.size())
+                std::cout << "I am going to write more data "<<std::endl;
+            //这次写完还有剩余数据
+        }
+        else
+        {
+            nwrote = 0;
+            if(errno!= EWOULDBLOCK)
+                std::cout << "TcpConnection::sendInLoop" << std::endl;
+        }
+        
+    }
+    assert(nwrote >= 0);
+    if (boost::implicit_cast<size_t>(nwrote) < message.size())
+    {
+        outputBuffer_.append(message.data()+nwrote, message.size()-nwrote);
+        //将发完剩余的内容加入buffer中
+        if (!channel_->isWriting())
+        {
+            channel_->enableWriting();
+        }
+    }    
+}
+
+void TcpConnection::shutdown()
+{
+    //FIXME: use compare and swap
+    if(state_ == kConnected)
+    {
+        setState(kDisconnected);
+        //FIXME: share_from_this()?
+        loop_->runInLoop(boost::bind(&TcpConnection::shutdownInLoop,this));
+    }
+}
+
+void TcpConnection::shutdownInLoop()
+{
+  loop_->assertInLoopThread();
+  if (!channel_->isWriting())
+  {
+    // we are not writing
+    socket_->shutdownWrite();
+  }
+}
+
+
+void TcpConnection::handleWrite()
+{
+  loop_->assertInLoopThread();
+  if (channel_->isWriting())
+  { //如果监听了读事件
+    ssize_t n = ::write(channel_->fd(),
+                        outputBuffer_.peek(),
+                        outputBuffer_.readableBytes());
+    if (n > 0) 
+    {
+        outputBuffer_.retrieve(n);
+        if (outputBuffer_.readableBytes() == 0) 
+        { //如果buffer中的数据被读完，取消对可读时间的监控
+            channel_->disableWriting();
+            if (state_ == kDisconnecting)
+            {
+            shutdownInLoop();
+            }
+        }
+        else 
+        {
+            std::cout << "I am going to write more data" << std::endl;
+        }
+    }
+    else
+    {
+      std::cout << "TcpConnection::handleWrite" <<std::endl;
+    }
+  } 
+  else 
+  {
+    std::cout << "Connection is down, no more writing"<<std::endl;
+  }
 }

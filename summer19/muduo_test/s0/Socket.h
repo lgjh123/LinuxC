@@ -24,6 +24,8 @@ public:
     //Enable/disable SO_REUSEADDR ??
     void setReuseAddr(bool on);
 
+    void shutdownWrite();
+
 private:
 
     const int sockfd_;
