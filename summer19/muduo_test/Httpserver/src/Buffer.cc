@@ -6,6 +6,8 @@
 #include <sys/uio.h>
 #include <boost/implicit_cast.hpp>
 
+const char Buffer::kCRLF[] = "\r\n";
+
 ssize_t Buffer::readFd(int fd,int* savedErrno)
 {
     char extrabuf[65536];     //64kB+1  多一个byte？

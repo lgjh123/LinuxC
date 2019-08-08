@@ -101,30 +101,31 @@ void TcpConnection::connectDestroyed()
   loop_->removeChannel(get_pointer(channel_));
 }
 
-void TcpConnection::send(const std::string& message)
+void TcpConnection::send(Buffer* buf)
 {
-    if(state_ == kConnected){
+    if(state_ == kConnected)
+    {
         if(loop_->isInLoopThread()) 
         {
-            sendInLoop(message);
+            sendInLoop(buf->peek(),buf->readableBytes());
         }
         else
         {
-            loop_->runInLoop(boost::bind(&TcpConnection::sendInLoop,this,message));
+           // loop_->runInLoop(boost::bind(&TcpConnection::sendInLoop,this,buf->retrieveAsString()));
         }
     }
 }
 
-void TcpConnection::sendInLoop(const std::string& message)
+void TcpConnection::sendInLoop(const void* data,size_t len)
 {
     loop_->assertInLoopThread();
     ssize_t nwrote = 0;
     if(!channel_->isWriting() && outputBuffer_.readableBytes() == 0)
     {  //不监控可读时间且可读区buffer没有数据
-        nwrote = ::write(channel_->fd(),message.data(),message.size());
+        nwrote = ::write(channel_->fd(),data,len);
         if(nwrote >= 0)
         {
-            if(boost::implicit_cast<size_t>(nwrote) < message.size())
+            if(boost::implicit_cast<size_t>(nwrote) < len)
                 std::cout << "I am going to write more data "<<std::endl;
             //这次写完还有剩余数据
         }
@@ -137,9 +138,9 @@ void TcpConnection::sendInLoop(const std::string& message)
         
     }
     assert(nwrote >= 0);
-    if (boost::implicit_cast<size_t>(nwrote) < message.size())
+    if (boost::implicit_cast<size_t>(nwrote) <len)
     {
-        outputBuffer_.append(message.data()+nwrote, message.size()-nwrote);
+        outputBuffer_.append(data+nwrote, len-nwrote);
         //将发完剩余的内容加入buffer中
         if (!channel_->isWriting())
         {

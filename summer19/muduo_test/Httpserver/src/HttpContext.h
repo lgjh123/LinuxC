@@ -1,4 +1,4 @@
-//#include "HttpRequest.h"
+#include "HttpRequest.h"
 //#include "copyable.h"
 
 class Buffer;
@@ -40,4 +40,4 @@ private:
 
     HttpRequestParseState state_;
     HttpRequest request_;
-}
+};

@@ -32,7 +32,7 @@ public:
     const InetAddress& peerAddress() { return peerAddr_; }
     bool connected() const { return state_ == kConnected; }
 
-    void send(const std::string& message);
+    void send(Buffer* buf);
     //发送消息(用缓冲区)
 
     void shutdown();
@@ -57,6 +57,15 @@ public:
         
     //当Tcpserver从他的map中removed 这个Tcpconnetion调用
 
+    void setContext(const boost::any& context)
+        { context_ = context; }
+
+    const boost::any& getContext() const
+    { return context_; }
+
+    boost::any* getMutableContext()
+    { return &context_; }
+
 
 private:
     enum StateE { kConnecting, kConnected ,kDisconnected,kDisconnecting };
@@ -69,7 +78,7 @@ private:
     void handleClose();
     void handleError();
 
-    void sendInLoop(const std::string& message);
+    void sendInLoop(const void* data,size_t len);
     //public的send发送后真正的发送要在EventLoop中进行
     void shutdownInLoop();
 
@@ -89,6 +98,8 @@ private:
     
     Buffer inputBuffer_;
     Buffer outputBuffer_;
+
+    boost::any context_;
 
 };
 typedef boost::shared_ptr<TcpConnection> TcpConnectionPtr;

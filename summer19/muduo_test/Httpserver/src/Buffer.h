@@ -129,7 +129,23 @@ public:
         buf.swap(buffer_);
         //交换buffer_和buf
     }
-    
+
+
+    const char* findCRLF() const
+    {
+        const char* crlf = std::search(peek(), beginWrite(), kCRLF, kCRLF+2);
+        return crlf == beginWrite() ? NULL : crlf;
+    }
+
+    const char* findCRLF(const char* start) const
+    {
+        assert(peek() <= start);
+        assert(start <= beginWrite());
+        const char* crlf = std::search(start, beginWrite(), kCRLF, kCRLF+2);
+        return crlf == beginWrite() ? NULL : crlf;
+    } 
+
+
 
     ssize_t readFd(int fd,int* savedErrno);
     //声明读函数
@@ -167,5 +183,6 @@ private:
     size_t readerIndex_;
     size_t writerIndex_;
 
+    static const char kCRLF[];
 };
 

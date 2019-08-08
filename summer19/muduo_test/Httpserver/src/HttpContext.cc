@@ -78,7 +78,7 @@ bool HttpContext::parseRequest(Buffer* buf,int receiveTime)
             const char* crlf = buf->findCRLF();
             if(crlf)
             {
-                const char* colon = std::find(buf->peek(), crlf, ":"); //找到：的位置
+                const char* colon = std::find(buf->peek(), crlf, ':'); //找到：的位置
                 if(colon != crlf)  //冒号的地方不在结尾
                 {
                     request_.addHeader(buf->peek(),colon,crlf);   //把这行开头到冒号，冒号到结尾传进addHxx，半开半闭(peek是得到readable的头指针)
