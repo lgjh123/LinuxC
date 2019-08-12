@@ -1,5 +1,5 @@
 #include "Buffer.h"
-#include "SocketsOps.h"
+#include "../net/SocketsOps.h"
 
 #include <errno.h>
 #include <memory.h>

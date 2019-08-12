@@ -1,6 +1,6 @@
-#include "TcpServer.h"
-#include "EventLoop.h"
-#include "InetAddress.h"
+#include "../net/TcpServer.h"
+#include "../net/EventLoop.h"
+#include "../net/InetAddress.h"
 #include <stdio.h>
 
 //关闭后对方服务器没有处理，会造成buzyloop

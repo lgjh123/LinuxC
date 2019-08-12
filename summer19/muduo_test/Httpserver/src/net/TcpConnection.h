@@ -1,7 +1,7 @@
 #pragma once
 #include "Callbacks.h"
 #include "InetAddress.h"
-#include "Buffer.h"
+#include "../base/Buffer.h"
 
 #include <boost/any.hpp>
 #include <boost/enable_shared_from_this.hpp>

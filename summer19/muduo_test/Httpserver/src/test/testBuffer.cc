@@ -1,6 +1,6 @@
-#include "TcpServer.h"
-#include "EventLoop.h"
-#include "InetAddress.h"
+#include "../net/TcpServer.h"
+#include "../net/EventLoop.h"
+#include "../net/InetAddress.h"
 #include <stdio.h>
 
 std::string message1;
@@ -13,8 +13,8 @@ void onConnection(const TcpConnectionPtr& conn)
     printf("onConnection(): new connection [%s] from %s\n",
            conn->name().c_str(),
            conn->peerAddress().toHostPort().c_str());
-    conn->send(message1);
-    conn->send(message2);
+    //conn->send(message1);
+    //conn->send(message2);
     conn->shutdown();
   }
   else
