@@ -31,6 +31,6 @@ private:
     Channel acceptChannel_;
     NewConnectionCallback newConnectionCallback_;
     bool listenning_;
-
+    int ideal_; // 对于最大文件描述符的处理
 };
 

@@ -50,5 +50,6 @@ void Channel::handleEvent()
         if(writeCallback_) writeCallback_();
     }
 
+    eventHanding_ = false;
 }
 

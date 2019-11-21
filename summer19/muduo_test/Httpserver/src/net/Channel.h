@@ -2,7 +2,7 @@
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 
-//channel 时间分发器
+//channel 事件分发器
 //每个channel对象自始至终只属于一个EventLoop
 //因此每个channel对象只属于某一个io线程
 //每个channel对象自始至终只负责一个fd的时间分发

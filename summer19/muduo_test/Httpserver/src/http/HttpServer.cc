@@ -45,7 +45,8 @@ void HttpServer::onMessage(const TcpConnectionPtr& conn,
 
   if (!context->parseRequest(buf, receiveTime))
   {
-    //conn->send("HTTP/1.1 400 Bad Request\r\n\r\n");    !!!!
+    printf("bad request\n");
+    //conn->send("HTTP/1.1 400 Bad Request\r\n\r\n");    //!!!!
     conn->shutdown();
   }
 
@@ -69,6 +70,7 @@ void HttpServer::onRequest(const TcpConnectionPtr& conn, const HttpRequest& req)
   if (response.closeConnection())
   {
     conn->shutdown();
+    printf("Httpserver::shutdown--------------------------------------\n");
   }
 }
 void HttpServer::setResponse(const HttpRequest& req,HttpResponse* resp)

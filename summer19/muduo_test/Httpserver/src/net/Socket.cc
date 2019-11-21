@@ -28,7 +28,9 @@ int Socket::accept(InetAddress* peeraddr)
 {
     struct sockaddr_in addr;
     bzero(&addr,sizeof addr);
-    int connfd = sockets::accept(sockfd_,&addr);
+   // int connfd = sockets::accept(sockfd_,&addr);
+    socklen_t len = sizeof(addr);
+    int connfd =  ::accept(sockfd_,(struct sockaddr*)&addr,&len);
     if(connfd >= 0)
     {
         peeraddr->setSockAddrInet(addr);

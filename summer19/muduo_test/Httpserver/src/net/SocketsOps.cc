@@ -181,6 +181,7 @@ int sockets::getSocketError(int sockfd)
 void sockets::shutdownWrite(int sockfd)
 {
   if(::shutdown(sockfd, SHUT_WR) < 0)
+ // if(::close(sockfd) < 0)
   {
     std::cout<< "sockets::shutdownWrite" << std::endl;
   }

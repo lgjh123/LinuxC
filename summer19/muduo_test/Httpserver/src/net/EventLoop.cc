@@ -68,6 +68,7 @@ void EventLoop::loop()
            std::cout << "test" << std::endl;;
           (*it)->handleEvent();
         }//遍历活跃io时间，执行回调
+        doPendingFunctors();
     }
     std::cout << "EventLoop " << this << " stop looping"<<std::endl;
     looping_ = false;
@@ -115,11 +116,13 @@ void EventLoop::queueInLoop(const Functor& cb)
   {
   mutex.lock();
   //FIXME
+  printf("33333333333333\n");
   pendingFunctors_.push_back(cb);
   }
 
   if (!isInLoopThread() || callingPendingFunctors_)
   {
+  printf("44444444444444444444\n");
     wakeup();
   }
 }
@@ -161,6 +164,7 @@ void EventLoop::doPendingFunctors()
 
   for (size_t i = 0; i < functors.size(); ++i)
   {
+    printf("dopendingfunctors????????????????????????\n");
     functors[i]();
   }
   callingPendingFunctors_ = false;

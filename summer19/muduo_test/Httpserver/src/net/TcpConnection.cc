@@ -30,16 +30,17 @@ TcpConnection::TcpConnection(EventLoop* loop,
             <<std::endl;
     channel_->setReadCallback(
          boost::bind(&TcpConnection::handleRead, this));
-    //绑定回调函数
-    //??set....Callback~
-    //
-    //
-    //
+           channel_->setWriteCallback(
+         boost::bind(&TcpConnection::handleWrite, this));
+           channel_->setCloseCallback(
+         boost::bind(&TcpConnection::handleClose, this));
+           channel_->setErrorCallback(
+         boost::bind(&TcpConnection::handleError, this));
 }
 
 TcpConnection::~TcpConnection()
 {
-    std::cout << "TcpConnection::dtor[" <<  name_ << "] at " << this
+    std::cout << "TcpConnection::dtor析构！！[" <<  name_ << "] at " << this
             << " fd=" << channel_->fd()
             << std::endl;
 }
@@ -92,8 +93,9 @@ void TcpConnection::handleError()
 
 void TcpConnection::connectDestroyed()
 {
+    printf("1111111111111111111111111111\n");
   loop_->assertInLoopThread();
-  assert(state_ == kConnected);
+  assert(state_ == kConnected || state_== kDisconnecting);
   setState(kDisconnected);
   channel_->disableAll();
   connectionCallback_(shared_from_this());

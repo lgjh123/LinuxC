@@ -55,7 +55,8 @@ void TcpServer::newConnection(int sockfd,const InetAddress& peerAddr)
     std::cout << "TcpServer::newConnection [" << name_
            << "] - new connection [" << connName
            << "] from " << peerAddr.toHostPort() 
-           << std::endl;
+           << "fd = " << sockfd << std::endl;
+        
     InetAddress localAddr(sockets::getLocalAddr(sockfd));
     //FIXME ??
     TcpConnectionPtr conn(
@@ -77,6 +78,7 @@ void TcpServer::removeConnection(const TcpConnectionPtr& conn)
            << "] - connection " << conn->name() << std::endl;
     size_t n = connections_.erase(conn->name());
     assert(n == 1); (void)n;
+    printf("222222222222222222222\n");
     loop_->queueInLoop(
     boost::bind(&TcpConnection::connectDestroyed, conn));
 }

@@ -109,6 +109,12 @@ SocketsOps.h
 /home/lee/sophomore2/LinuxC/summer19/muduo_test/Httpserver/src/net/SocketsOps.h
 boost/bind.hpp
 -
+sys/types.h
+-
+sys/stat.h
+-
+fcntl.h
+-
 
 /home/lee/sophomore2/LinuxC/summer19/muduo_test/Httpserver/src/net/Acceptor.h
 boost/function.hpp
